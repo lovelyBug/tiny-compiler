@@ -2,6 +2,7 @@ const DefineVariables = ['const', 'let', 'var']
 // 箭头函数
 const ArrowFunc = '=>'
 
+// 生成tokens
 function tokenizer(input) {
   let current = 0
   let tokens = []
@@ -24,8 +25,10 @@ function tokenizer(input) {
       }
       let type
       if(value.includes('.')) {
+        // 函数调用
         type = 'CallFunc'
       } else {
+        // 区分是关键字还是变量命名
         type = DefineVariables.includes(value) ? 'DefineVariables' : 'Variables'
       }
       tokens.push({ type, value })
@@ -39,10 +42,12 @@ function tokenizer(input) {
         value += char
         char = input[++current]
       }
+      // 如果含有 '=>' 说明是箭头函数
       const type = value === ArrowFunc ? 'ArrowFunc' : 'Opeartor'
       tokens.push({ type, value })
       continue
     }
+    // 处理参数
     if(char === '(') {
       let value = ''
       char = input[++current]
@@ -54,16 +59,19 @@ function tokenizer(input) {
       tokens.push({ type: 'Params', value })
       continue
     }
+    // 处理代码块（也可以说是函数体）
     if(char === '{') {
       tokens.push({ type: 'Parent', value: '{' })
       current++
       continue
     }
+    // 代码块闭合
     if(char === '}') {
       tokens.push({ type: 'Parent', value: '}' })
       current++
       continue
     }
+    // 处理数字
     const numberReg = /[0-9]/
     if(numberReg.test(char)) {
       let value = ''
@@ -75,6 +83,7 @@ function tokenizer(input) {
       current++
       continue
     }
+    // 处理字符串
     if(char === '"') {
       let value = ''
       char = input[++current]
@@ -90,7 +99,7 @@ function tokenizer(input) {
   }
   return tokens
 }
-
+// 解析：生成ES6语法树
 function parser(tokens) {
   const ast = {
     type: 'Program',
@@ -103,6 +112,7 @@ function parser(tokens) {
       let node = tokens[current + 4]
       let expression 
       if(node &&  node.type === 'ArrowFunc') {
+        // 箭头函数
         expression = {
           type: 'Function',
           identifier: token.value,
@@ -114,6 +124,7 @@ function parser(tokens) {
         current++
         expression.body = walk()
       } else {
+        // 定义变量
         expression = {
           type: 'DefineVariables',
           identifier: token.value,
@@ -126,6 +137,7 @@ function parser(tokens) {
       return expression
     }
     if(token.type === 'Variables') {
+      // 函数调用 method()
       if(tokens[current - 1].type !== 'DefineVariables' && tokens[current + 1].type === 'Params') {
         let expression = {
           type: 'CallFunc',
@@ -135,6 +147,7 @@ function parser(tokens) {
         current++
         return expression
       }
+      // 变量赋值 a = 1
       if(tokens[current - 1].type !== 'DefineVariables' && tokens[current + 1].type !== 'Params') {
         let expression = {
           type: 'Assignment',
@@ -146,6 +159,7 @@ function parser(tokens) {
         return expression
       }
     }
+    // 代码块
     if(token.type === 'Parent' && token.value === '{') {
       let expression = {
         type: 'CodeBlock',
@@ -159,6 +173,7 @@ function parser(tokens) {
       current++
       return expression.body
     }
+    // 函数调用 console.log()
     if(token.type === 'CallFunc') {
       let expression = {
         type: 'CallFunc',
@@ -166,9 +181,9 @@ function parser(tokens) {
         params: tokens[++current].value
       }
       current++
-
       return expression
     }
+    // 处理 数字、字符串、参数
     if(token.type === 'Number' || token.type === 'String' || token.type === 'Params') {
       current++
       return token
@@ -179,7 +194,7 @@ function parser(tokens) {
   }
   return ast
 }
-
+// 遍历ES5 ast
 function traverser(ast, visitor) {
   function traverseArray(array, parent) {
     array.forEach(node => {
@@ -206,6 +221,7 @@ function traverser(ast, visitor) {
   traverseNode(ast, null)
 }
 
+// 转换：根据ES6 ast生成ES5 ast
 function transformer(ast) {
   let newAst = {
     type: 'Program',
@@ -260,6 +276,7 @@ function transformer(ast) {
   return newAst
 }
 
+// 代码生成：根据ES5ast生成ES5代码
 function codeGenerator(node) {
   switch(node.type) {
     case 'Program':
@@ -284,6 +301,7 @@ function ${node.name}(${node.params}) {
   }
 }
 
+// 编译
 function compiler(input) {
   const tokens = tokenizer(input)
   const ast = parser(tokens)
