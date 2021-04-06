@@ -2,7 +2,8 @@ const DefineVariables = ['const', 'let', 'var']
 // 箭头函数
 const ArrowFunc = '=>'
 
-// 生成tokens
+// 生成tokens  词法分析，生成词素
+
 function tokenizer(input) {
   let current = 0
   let tokens = []
@@ -99,7 +100,7 @@ function tokenizer(input) {
   }
   return tokens
 }
-// 解析：生成ES6语法树
+// 解析：生成ES6语法树 语法分析，生成抽象语法树
 function parser(tokens) {
   const ast = {
     type: 'Program',
